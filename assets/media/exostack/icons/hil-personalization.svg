@@ -1,0 +1,7 @@
+<svg xmlns:ns0="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 32 32" role="img" aria-label="hil personalization"><ns0:g color="#863C68">
+      <ns0:g fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round">
+        <ns0:circle cx="16" cy="11" r="3" />
+        <ns0:path d="M10 23V21C10 16 22 16 22 21V23M5 12A12 12 0 0 1 25 7M25 3V8H20M27 20A12 12 0 0 1 7 25M7 29V24H12" />
+      </ns0:g>
+    </ns0:g>
+  </svg>
