@@ -5,14 +5,48 @@
   const $$ = (s,root=document) => [...root.querySelectorAll(s)];
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let motionPaused = reduceMotion.matches;
+  /* Card preview videos.
+     - The <img> under each video is the poster; the video is revealed only once it has a real frame,
+       and stays revealed afterwards (a paused frame looks identical to the poster, so no blink on return).
+     - Videos are fetched through a small queue (MAX_LOADS at a time, in page order) instead of all at once,
+       so the first visible card starts quickly rather than every card crawling in together.
+     - Data-saver connections keep the posters only. */
   const backgroundVideos=$$('[data-background-video]');
   const visibleVideos=new Set();
-  function updateVideo(video) {
-    if(motionPaused || !visibleVideos.has(video) || document.hidden){video.pause();video.classList.remove('is-playing');return;}
-    if(!video.src && video.dataset.src) video.src=video.dataset.src;
+  const saveData=!!(navigator.connection&&navigator.connection.saveData);
+  const downlink=navigator.connection&&navigator.connection.downlink;
+  const MAX_LOADS=downlink&&downlink<5?1:2; /* one at a time on slow links */
+  const queue=[];let loading=0;
+  function finishLoad(video){if(video.dataset.loadState!=='loading')return;video.dataset.loadState='ready';loading--;pumpQueue();updateVideo(video);}
+  function pumpQueue(){
+    queue.sort((a,b)=>backgroundVideos.indexOf(a)-backgroundVideos.indexOf(b));
+    for(let i=0;loading<MAX_LOADS&&i<queue.length;){
+      const video=queue[i];
+      if(video.dataset.loadState||!visibleVideos.has(video)){queue.splice(i,1);continue;} /* scrolled past before its turn: fetch it when it returns */
+      /* the same clip used twice (e.g. XoNav in Research Vision and in the grid): wait for the first copy, then reuse the browser cache */
+      if(backgroundVideos.some(v=>v!==video&&v.dataset.src===video.dataset.src&&v.dataset.loadState==='loading')){i++;continue;}
+      queue.splice(i,1);
+      video.dataset.loadState='loading';loading++;
+      video.addEventListener('canplaythrough',()=>finishLoad(video),{once:true});
+      video.addEventListener('error',()=>{finishLoad(video);video.dataset.loadState='failed';},{once:true});
+      setTimeout(()=>finishLoad(video),8000); /* never let one slow file block the queue */
+      video.preload='auto';video.src=video.dataset.src;video.load(); /* playback starts at canplaythrough, so it does not freeze mid-loop */
+    }
+  }
+  function requestLoad(video){if(saveData||video.dataset.loadState||queue.includes(video))return;queue.push(video);pumpQueue();}
+  backgroundVideos.forEach(video=>{
     video.muted=true;
+    const reveal=()=>video.classList.add('is-playing');
+    video.addEventListener('playing',reveal);
+    video.addEventListener('loadeddata',()=>{if(video.currentTime>0||!video.paused)reveal();});
+  });
+  function updateVideo(video) {
+    const shouldPlay=!motionPaused&&visibleVideos.has(video)&&!document.hidden;
+    if(!shouldPlay){if(!video.paused)video.pause();return;}
+    if(!video.dataset.loadState){requestLoad(video);return;}
+    if(video.dataset.loadState==='failed'||!video.paused)return;
     const promise=video.play();
-    if(promise) promise.then(()=>video.classList.add('is-playing')).catch(()=>video.classList.remove('is-playing'));
+    if(promise)promise.catch(()=>{ /* interrupted or blocked (e.g. iOS Low Power Mode): the poster stays; retry on next visibility change */ });
   }
   function updateMotion() {
     document.documentElement.classList.toggle('motion-paused',motionPaused);
@@ -27,7 +61,7 @@
     const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{
       if(entry.isIntersecting)visibleVideos.add(entry.target);else visibleVideos.delete(entry.target);
       updateVideo(entry.target);
-    }),{rootMargin:'80px'});
+    }),{rootMargin:'300px 0px'});
     backgroundVideos.forEach(video=>observer.observe(video));
   } else backgroundVideos.forEach(video=>visibleVideos.add(video));
   document.addEventListener('visibilitychange',()=>backgroundVideos.forEach(updateVideo));
