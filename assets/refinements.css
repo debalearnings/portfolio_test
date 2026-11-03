@@ -318,3 +318,6 @@ html{scroll-padding-top:88px}
  .bibliography-page .pub-full .authors,.bibliography-page .pub-full .venue,.bibliography-page .pub-full .pub-detail{font-size:12px}
  .bibliography-page .pub-link-under-image .text-link{font-size:11px}
 }
+.project-content h3>.card-arrow{display:inline-flex;align-items:center;color:var(--accent);cursor:pointer;transition:transform .16s}
+.project-content h3>.card-arrow .icon{width:18px;height:18px}
+.project-content h3>.card-arrow:hover{transform:translateX(3px);color:var(--accent-dark)}
