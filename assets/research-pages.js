@@ -57,7 +57,7 @@
     const W = grid.clientWidth, wN = Math.round((W - GAP) * 5 / 12), wW = W - GAP - wN;
     const X = [0, wW + GAP], WD = [wW, wN];
     const isFull = t => spanOf(t) >= 12 && !(t.classList.contains('unsplit') && t.style.gridColumn);
-    const prefers = t => { const s = spanOf(t); return s >= 7 ? 0 : s <= 5 ? 1 : -1; };
+    const prefers = t => { if (t.dataset.track) return t.dataset.track === 'wide' ? 0 : 1; const s = spanOf(t); return s >= 7 ? 0 : s <= 5 ? 1 : -1; };
     // split the page into segments of half-width tiles separated by full-width tiles
     const segs = [[]];
     tiles.forEach(t => { if (isFull(t)) segs.push(t, []); else segs[segs.length - 1].push(t); });
@@ -67,6 +67,7 @@
       if (!seg.length) continue;
       const H = seg.map(t => [heightAt(t, WD[0]), heightAt(t, WD[1])]);
       const P = seg.map(prefers);
+      const F = seg.map(t => t.dataset.track ? 1 : 0);   // tiles pinned to a track
       const n = seg.length, limit = n <= 11 ? (1 << n) : 0;
       let best = null, bestMask = 0;
       const score = mask => {
@@ -75,7 +76,7 @@
           const k = (mask >> i) & 1, top = h[k];
           if (top < prevTop - 40) pen += (prevTop - top) * 0.35;   // a later section starting above an earlier one
           if (i === 0 && k !== 0) pen += 30;                       // first section of a band reads from the left
-          prevTop = top; h[k] += H[i][k] + GAP; if (P[i] >= 0 && P[i] !== k) pen += 40;
+          prevTop = top; h[k] += H[i][k] + GAP; if (P[i] >= 0 && P[i] !== k) pen += F[i] ? 1e6 : 40;
         }
         return Math.max(h[0], h[1]) + Math.abs(h[0] - h[1]) * 0.5 + pen;
       };

@@ -194,3 +194,6 @@ a.dz-ref:hover{border-color:#cbbde9;color:var(--accent)}
 .dz-tile.split.unsplit{display:flex;flex-direction:column;gap:10px}
 .dz-tile.split.unsplit .dz-media-col{order:0}
 @media (max-width:760px){.dz-lead-media .dz-clip{max-height:62vh}}
+.dz-cols2{columns:2;column-gap:30px}
+.dz-cols2>*{break-inside:avoid;margin-bottom:8px}
+@media (max-width:760px){.dz-cols2{columns:1}}
